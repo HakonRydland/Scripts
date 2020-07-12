@@ -3,9 +3,10 @@
         (Object/array) Target: Object or Position
         (String) Type: Bomb-Type 					(optional) (Default: HE)
         (Bool) Track: follow target					(optional) (Default: false)
-        (int) Drop: How many bombs to drop  		(optional) (Default: 1)            (same target)
+        (int) Drop: How many bombs to drop  		(optional) (Default: 1)            (same target) (HE no more than 4)
         (int) Inaccuracy: Inaccuracy in meters		(optional) (Default: 0)            (if tracking this will not apply)
         (int) Direction: degrees from north         (optional) (Default: random 360)
+        (string) Plane: className                   (optional) (Default: "B_Plane_CAS_01_dynamicLoadout_F";) <- Vanilla A10
 
     Function: Launches a A10 at target and drops LGB's
 
@@ -16,7 +17,7 @@
     Example use: [cursorObject, "HE", true, 1, 0, 270] execVM "precisionAirstrike.sqf"; //sends a airstrike wite a snigle gbu-12 to the cursorTarget from the east
 */
 
-params ["_target", ["_bombType", "HE"], ["_track", false], ["_dropCount", 1], ["_inaccuracy", 0], ["_dir", random 360]];
+params ["_target", ["_bombType", "HE"], ["_track", false], ["_dropCount", 1], ["_inaccuracy", 0], ["_dir", random 360], ["_planeType", "B_Plane_CAS_01_dynamicLoadout_F"]];
 if (isNil "_target") exitWith {diag_Log "| Precition Airstrike | Nil object/position input"};
 
 //select bomb type
@@ -25,8 +26,8 @@ _engagementDist = 400;
 _dropInterval = 1;
 switch (_bombType) do {
     Case "HE": {_pylon = "PylonMissile_1Rnd_Bomb_04_F"; _bomb = "Bomb_04_Plane_CAS_01_F"; _flyHight = 150};
-    Case "Cluster": {_pylon = "PylonMissile_1Rnd_BombCluster_01_F"; _bomb = "BombCluster_01_F"; _flyHight = 500; _inaccuracy = _inaccuracy*3; ; _engagementDist = 305};
-    Case "AT": {_pylon = "PylonRack_1Rnd_LG_scalpel"; _bomb = "missiles_SCALPEL"; _flyHight = 300; ; _engagementDist = 800};
+    Case "Cluster": {_pylon = "PylonMissile_1Rnd_BombCluster_01_F"; _bomb = "BombCluster_01_F"; _flyHight = 200; _inaccuracy = _inaccuracy*3; ; _engagementDist = 325};
+    Case "AT": {_pylon = "PylonRack_1Rnd_LG_scalpel"; _bomb = "missiles_SCALPEL"; _flyHight = 150; ; _engagementDist = 800};
     Case "Dumb": {_pylon = "PylonMissile_1Rnd_Mk82_F"; _bomb = "Mk82BombLauncher"; _flyHight = 150; _engagementDist = 615; _dropInterval =0.35};
     Default {_pylon = "PylonMissile_1Rnd_Bomb_04_F"; _bomb = "Bomb_04_Plane_CAS_01_F"; _flyHight = 150};
 };
@@ -44,7 +45,6 @@ _laseTarget = if (_track) then {_target} else {[_pos select 0, _pos select 1, 0]
 
 //spawn plane
 private _planePos = _pos getPos [4000, _dir + 180];
-private _planeType = "O_Plane_CAS_02_dynamicLoadout_F";//"B_Plane_CAS_01_dynamicLoadout_F";
 private _planefn = [_planePos, _dir, _planeType, west] call bis_fnc_spawnvehicle;
 private _plane = _planefn select 0;
 private _planeCrew = _planefn select 1;
@@ -53,11 +53,11 @@ private _groupPlane = _planefn select 2;
 
 //orient get it flying and set its loadout
 _plane setDir (_plane getRelDir _pos);
-_plane setPos (_planePos vectorAdd [0,0,350]);
+_plane setPos (_planePos vectorAdd [0,0,_flyHight]);
 _plane setVelocityModelSpace (velocityModelSpace _plane vectorAdd [0, 150, 50]);
-_plane flyInHeight 150;
+_plane flyInHeight _flyHight;
 _posASL = AGLToASL _pos;
-_plane flyInHeightASL [(_posASL select 2) + 150, (_posASL select 2) + 150, (_posASL select 2) + 150];
+_plane flyInHeightASL [(_posASL select 2) + _flyHight, (_posASL select 2) + _flyHight, (_posASL select 2) + _flyHight];
 if !(
     for "_i" from 1 to 10 do {
     _plane setPylonLoadOut [_i, _pylon, true];
@@ -77,8 +77,6 @@ hideObjectGlobal _designator;
 //get pos of path
 private _dp = _pos getPos [10, _dir +180];
 _dp = _dp vectorAdd [0,0,150];
-private _ep = _pos getPos [100, _dir];
-_ep = _ep vectorAdd [0,0,150];
 private _fp = _pos getPos [4000, _dir];
 _fp = _fp vectorAdd [0,0,150];
 
@@ -88,15 +86,23 @@ _wp1 setWaypointType "MOVE";
 _wp1 setWaypointSpeed "LIMITED";
 _wp1 setWaypointBehaviour "CARELESS";
 _plane setCollisionLight true;
-private _wp2 = group _plane addWaypoint [_ep, 0];
-_wp2 setWaypointSpeed "LIMITED";
-_wp2 setWaypointType "MOVE";
 private _wp3 = group _plane addWaypoint [_fp, 0];
 _wp3 setWaypointType "MOVE";
 _wp3 setWaypointSpeed "FULL";
 
+if (_track) then {
+    [_wp1, _laseTarget, _plane, _flyHight] spawn {
+        params ["_wp", "_laseTarget", "_plane", "_flyHight"];
+        while {sleep 1; (_plane distance2D _laseTarget > 800)} do {
+            _pos = if (_laseTarget isEqualType []) then {_laseTarget} else {getPos _laseTarget};
+            _pos = [_pos select 0, _pos select 1, _flyHight];
+            _wp setWaypointPosition [_pos, 0];
+        };
+    };
+};
+
 //wait to fire
-waitUntil {_plane distance2D _pos < _engagementDist};
+waitUntil {_plane distance2D _laseTarget < _engagementDist};
 private _lasePoint = laserTarget _designator;
 for "_i" from 1 to _dropCount do {
     _plane fireAtTarget [_lasePoint,_bomb];
@@ -105,7 +111,7 @@ for "_i" from 1 to _dropCount do {
 
 //cleanUp
 private _timeOut = time + 300;
-waitUntil {(currentWaypoint (group _plane) == 4) or (time > _timeOut)};
+waitUntil {(currentWaypoint (group _plane) == 3) or (time > _timeOut)};
 {deleteVehicle _x} forEach crew _plane;
 {deleteVehicle _x} forEach units _desGroup;
 deleteVehicle _plane;
