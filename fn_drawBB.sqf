@@ -5,7 +5,7 @@
 
     Arguments:
     0. <Object> Object to draw bounding box of
-    1. <Int>    Type of BB to draw (0-3)        (Optional - Default: 3)
+    1. <Int>    Type of BB to draw (0-3)        (Optional - Default: 0)
     2. <Bool>   draw BB                         (optional - Default: true)
 
     Return Value:
@@ -20,10 +20,10 @@
         [cursorTarget, 0, false] call HR_fnc_drawBB; //draws bounding box
         [cursorTarget, 0, true] call HR_fnc_drawBB; //stop drawing bounding box
 */
-params [["_object", objnull], ["_type", 3], ["_draw", true]];
+params [["_object", objnull], ["_type", 0], ["_draw", true]];
 
 //clean up incase of reaplying without removing
-removeMissionEventHandler ["Draw3D", HR_drawBB_Object getVariable ["HR_drawBB_EH", -1]];
+removeMissionEventHandler ["Draw3D", player getVariable ["HR_drawBB_EH", -1]];
 
 //set new object
 HR_drawBB_Object = _object;
@@ -81,7 +81,7 @@ if !(_draw) exitWith { HR_drawBB_Object = nil; HR_drawBB_LinePairs = []; HR_draw
 //start drawing
 private _eh = addMissionEventHandler ["Draw3D", {
     //remove EH if object is destroyed or null
-    if (!alive HR_drawBB_Object) then { removeMissionEventHandler ["Draw3D", HR_drawBB_Object getVariable ["HR_drawBB_EH", -1]] };
+    if (!alive HR_drawBB_Object) then { removeMissionEventHandler ["Draw3D", player getVariable ["HR_drawBB_EH", -1]] };
 
     //draw box
     {
@@ -98,7 +98,7 @@ private _eh = addMissionEventHandler ["Draw3D", {
         drawIcon3D ["\a3\ui_f\data\map\markers\military\dot_ca.paa", [1,0,0,1], HR_drawBB_Object modelToWorldVisual (_x#1), 1, 1, 0, _x#0, 1, 0.05, "TahomaB"];
     } forEach HR_drawBB_POI;
 }];
-HR_drawBB_Object setVariable ["HR_drawBB_EH", _eh];
+player setVariable ["HR_drawBB_EH", _eh];
 
 //return key points
 _HR_drawBB_POI
