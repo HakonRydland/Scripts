@@ -29,11 +29,11 @@ if (_POI isEqualTo "") exitWith {"ERROR: No POI input"};
 private _BB = _type boundingBoxReal _object;
 
 switch _POI do {
-    case "Left":   {_BB#0#0};
-    case "Back":   {_BB#0#1};
-    case "Bottom": {_BB#0#2};
-    case "Right":  {_BB#1#0};
-    case "Front":  {_BB#1#1};
-    case "Top":    {_BB#1#2};
+    case "Left":   { [_BB#0#0, 0, 0] };
+    case "Back":   { [0, _BB#0#1, 0] };
+    case "Bottom": { [0, 0, _BB#0#2] };
+    case "Right":  { [_BB#1#0, 0, 0] };
+    case "Front":  { [0, _BB#1#1, 0] };
+    case "Top":    { [0, 0, _BB#1#2] };
     Default {"ERROR: Invalid POI"};
 };
