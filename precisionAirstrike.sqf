@@ -8,13 +8,13 @@
         (int) Direction: degrees from north         (optional) (Default: random 360)
         (string) Plane: className                   (optional) (Default: "B_Plane_CAS_01_dynamicLoadout_F";) <- Vanilla A10
 
-    Function: Launches a A10 at target and drops LGB's
+    Function: Launches a plane at target and drops LGB's
 
     return: nil
 
     Execution: Unscheduled
 
-    Example use: [cursorObject, "HE", true, 1, 0, 270] execVM "precisionAirstrike.sqf"; //sends a airstrike wite a snigle gbu-12 to the cursorTarget from the east
+    Example use: [cursorObject, "HE", true, 1, 0, 270] execVM "precisionAirstrike.sqf"; //sends a airstrike with a single gbu-12 to the cursorTarget from the east
 */
 
 params ["_target", ["_bombType", "HE"], ["_track", false], ["_dropCount", 1], ["_inaccuracy", 0], ["_dir", random 360], ["_planeType", "B_Plane_CAS_01_dynamicLoadout_F"]];
@@ -33,15 +33,8 @@ switch (_bombType) do {
 };
 
 //geting target position
-private ["_pos", "_laseTarget"];
-if (_target isEqualType []) then {
-    _pos = _target;
-    _pos = _pos getPos [random _inaccuracy, random 360];
-} else {
-    _pos = getpos _target;
-    _pos = _pos getPos [random _inaccuracy, random 360];
-};
-_laseTarget = if (_track) then {_target} else {[_pos select 0, _pos select 1, 0]};
+private _pos = _target getPos [random _inaccuracy, random 360];
+private _laseTarget = if (_track) then {_target} else {[_pos select 0, _pos select 1, 0]};
 
 //spawn plane
 private _planePos = _pos getPos [4000, _dir + 180];
@@ -58,11 +51,24 @@ _plane setVelocityModelSpace (velocityModelSpace _plane vectorAdd [0, 150, 50]);
 _plane flyInHeight _flyHight;
 _posASL = AGLToASL _pos;
 _plane flyInHeightASL [(_posASL select 2) + _flyHight, (_posASL select 2) + _flyHight, (_posASL select 2) + _flyHight];
-if !(
-    for "_i" from 1 to 10 do {
-    _plane setPylonLoadOut [_i, _pylon, true];
-    }
-) exitWith {diag_Log "| Precition Airstrike | Plane dosnt support pylons"};
+
+//set pylon loadout
+private _pylonsCfg = (configFile >> "CfgVehicles" >> _planeType >> "Components" >> "TransportPylonsComponent");
+{
+    private _attachement = getArray (_x >> "attachment");
+    private _loadoutMags = _attachement apply { getText (configFile >> "CfgMagazines" >> _x >> "pylonWeapon") };
+    {
+        _plane removeWeaponTurret [_x, [-1]];
+        _plane removeWeaponTurret [_x, [0]];
+    } forEach _loadoutMags;
+} forEach (configProperties [(_pylonsCfg >> "Presets")]);
+
+_pylons = "true" configClasses (_pylonsCfg >> "Pylons");
+{
+    if ("pylon" in toLower configName _x) then {
+        _plane setPylonLoadout [_forEachIndex +1, _pylon, true];
+    };
+} forEach _pylons;
 
 //spawn drone for targeting
 private _designatorPos = _pos findEmptyPosition [5, 20, "B_UAV_01_F"];
