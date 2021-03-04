@@ -43,6 +43,7 @@ private _allTargets = _targets apply {
         _can
     };
 };
+_allTargets = _allTargets select {!isNull _x};
 private _target = _allTargets#0;
 
 //select bomb type
