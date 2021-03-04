@@ -24,6 +24,7 @@
     License: MIT License
 */
 params [["_targets", [], [[]]], ["_bombType", "HE"], ["_track", false], ["_dir", random 360], ["_planeType", "B_Plane_CAS_01_dynamicLoadout_F"]];
+if !(canSuspend) exitWith {diag_Log "| Laser Guided Airstrike | this needs to run in scheduled environment, use spawn"};
 if (_targets isEqualTo []) exitWith {diag_Log "| Laser Guided Airstrike | No targets passed"};
 
 //make sure we have a obj reference for targeting
