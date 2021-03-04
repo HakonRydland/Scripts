@@ -23,8 +23,8 @@
 
     License: MIT License
 */
-params ["_targets", ["_bombType", "HE"], ["_track", false], ["_dir", random 360], ["_planeType", "B_Plane_CAS_01_dynamicLoadout_F"]];
-if (isNil "_targets") exitWith {diag_Log "| Precition Airstrike | no targets passed"};
+params [["_targets", [], [[]]], ["_bombType", "HE"], ["_track", false], ["_dir", random 360], ["_planeType", "B_Plane_CAS_01_dynamicLoadout_F"]];
+if (_targets isEqualTo []) exitWith {diag_Log "| Precition Airstrike | no targets passed"};
 
 //make sure we have a obj reference for targeting
 private _toDelete = [];
