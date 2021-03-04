@@ -24,7 +24,7 @@
     License: MIT License
 */
 params [["_targets", [], [[]]], ["_bombType", "HE"], ["_track", false], ["_dir", random 360], ["_planeType", "B_Plane_CAS_01_dynamicLoadout_F"]];
-if (_targets isEqualTo []) exitWith {diag_Log "| Precition Airstrike | no targets passed"};
+if (_targets isEqualTo []) exitWith {diag_Log "| Laser Guided Airstrike | No targets passed"};
 
 //make sure we have a obj reference for targeting
 private _toDelete = [];
@@ -33,6 +33,7 @@ private _allTargets = _targets apply {
         _x
     } else {
         private _can = "Land_Can_Dented_F" createVehicle _x;
+        _can setPos _x;
         if (isServer) then {
             _can hideObjectGlobal true
         } else {
@@ -66,7 +67,6 @@ private _plane = _planefn select 0;
 private _planeCrew = _planefn select 1;
 {_x disableAI "AUTOTARGET"; _x disableAI "TARGET"}forEach _planeCrew;
 private _groupPlane = _planefn select 2;
-_plane setVariable ["HR_Airstrike_Targets", +_allTargets];
 
 //orient get it flying and set its loadout
 _plane setDir (_plane getRelDir _pos);
@@ -75,6 +75,9 @@ _plane setVelocityModelSpace (velocityModelSpace _plane vectorAdd [0, 150, 50]);
 _plane flyInHeight _flyHight;
 _posASL = AGLToASL _pos;
 _plane flyInHeightASL [(_posASL select 2) + _flyHight, (_posASL select 2) + _flyHight, (_posASL select 2) + _flyHight];
+
+//Set fired event, to handle missile guidance
+_plane setVariable ["HR_Airstrike_Targets", +_allTargets];
 _plane addEventHandler ["Fired", {
     params ["_unit", "_weapon", "_muzzle", "_mode", "_ammo", "_magazine", "_projectile", "_gunner"];
     private _targets = _unit getVariable "HR_Airstrike_Targets";
