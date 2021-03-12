@@ -6,9 +6,10 @@
     Arguments:
     0. <Array>  Objects/Positions
     1. <String> Bomb type ("HE", "Cluster", "AT") [Optional - default: "HE"]
-    2. <Bool>   Plane track target (first target passed) [Optional - default: false]
-    3. <Int>    Egres angle [Optional - default: random 360]
-    4. <String> Plane type [Optional - default: "B_Plane_CAS_01_dynamicLoadout_F"]
+    2. <Side>   Side of plane [Optional - default: west]
+    3. <Bool>   Plane track target (first target passed) [Optional - default: false]
+    4. <Int>    Egres angle [Optional - default: random 360]
+    5. <String> Plane type [Optional - default: "B_Plane_CAS_01_dynamicLoadout_F"]
 
     Return Value:
     <String> Script handler
@@ -18,12 +19,12 @@
     Public: Yes
     Dependencies:
 
-    Example: [[_obj1, _obj2, _pos1], "he", false, 0] spawn HR_fnc_LGAirstrike;
+    Example: [[_obj1, _obj2, _pos1], "he", independent, false, 0] spawn HR_fnc_LGAirstrike;
 
 
     License: MIT License
 */
-params [["_targets", [], [[]]], ["_bombType", "HE"], ["_track", false], ["_dir", random 360], ["_planeType", "B_Plane_CAS_01_dynamicLoadout_F"]];
+params [["_targets", [], [[]]], ["_bombType", "HE"], ["_side", west, [sideUnknown]], ["_track", false], ["_dir", random 360], ["_planeType", "B_Plane_CAS_01_dynamicLoadout_F"]];
 if !(canSuspend) exitWith {diag_Log "| Laser Guided Airstrike | this needs to run in scheduled environment, use spawn"};
 if (_targets isEqualTo []) exitWith {diag_Log "| Laser Guided Airstrike | No targets passed"};
 
@@ -64,7 +65,7 @@ private _laseTarget = _target;
 
 //spawn plane
 private _planePos = _pos getPos [4000, _dir + 180];
-private _planefn = [_planePos, _dir, _planeType, west] call bis_fnc_spawnvehicle;
+private _planefn = [_planePos, _dir, _planeType, _side] call bis_fnc_spawnvehicle;
 private _plane = _planefn select 0;
 private _planeCrew = _planefn select 1;
 {_x disableAI "AUTOTARGET"; _x disableAI "TARGET"}forEach _planeCrew;
